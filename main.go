@@ -52,8 +52,7 @@ var (
 	mark          = "openpitrix-import"
 	dynamicClient *dynamic.DynamicClient
 	serverURL     string
-	username      string
-	password      string
+	token         string
 	repoURL       string
 )
 
@@ -79,14 +78,12 @@ func main() {
 	}
 
 	rootCmd.Flags().StringVar(&serverURL, "server", "", "Kubesphere Server URL (required)")
-	rootCmd.Flags().StringVar(&username, "username", "", "Username (required)")
-	rootCmd.Flags().StringVar(&password, "password", "", "Password (required)")
 	rootCmd.Flags().StringVar(&repoURL, "repo", "", "Helm index URL (required)")
+	rootCmd.Flags().StringVar(&token, "token", "", "token (required)")
 
 	rootCmd.MarkFlagRequired("server")
-	rootCmd.MarkFlagRequired("username")
-	rootCmd.MarkFlagRequired("password")
 	rootCmd.MarkFlagRequired("repo")
+	rootCmd.MarkFlagRequired("token")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -95,7 +92,7 @@ func main() {
 }
 
 func run() {
-	log.Info().Msgf("Starting to uplaod to %s ", serverURL)
+	log.Info().Msgf("Starting to upload to %s ", serverURL)
 
 	err := initDynamicClient()
 	if err != nil {
@@ -263,7 +260,7 @@ func upload(appRequest AppRequest, name, version, url string) (appID string, err
 		return "", err
 	}
 
-	req.SetBasicAuth(username, password)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	resp, err := client.Do(req)
