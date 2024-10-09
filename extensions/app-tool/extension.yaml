@@ -1,0 +1,33 @@
+apiVersion: kubesphere.io/v1alpha1
+name: app-tool
+version: 0.1.0
+displayName:
+  zh: 应用商店同步工具
+  en: App store sync tool
+description:
+  zh: 应用商店同步工具
+  en: App store sync tool
+home: https://kubesphere.io
+sources:
+  - https://github.com/kubesphere
+kubeVersion: ">=1.19.0-0"
+ksVersion: ">=4.1.1-0"
+category: dev-tools
+keywords:
+  - dev-tools
+provider:
+  zh:
+    name: "kubesphere"
+    email: ""
+    url: ""
+  en:
+    name: "kubesphere"
+    email: ""
+    url: ""
+icon: ./static/favicon.svg
+installationMode: HostOnly
+externalDependencies:
+  - name: openpitrix
+    type: extension
+    version: '>= 1.0.0-0'
+    required: true

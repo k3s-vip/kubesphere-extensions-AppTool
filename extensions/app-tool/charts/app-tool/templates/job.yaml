@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: app-tool-job
+  namespace: extension-app-tool
+spec:
+  template:
+    metadata:
+      annotations:
+        kubesphere.io/serviceaccount-name: app-tool
+    spec:
+      serviceAccountName: app-tool-k8s
+      containers:
+        - name: app-tool-job
+          image: kubesphere/app-tool:1.0.0
+          args:
+            - /bin/sh
+            - -c
+            - |
+              app-tool --repo={{ .Values.repoUrl }}  --server=http://ks-console.kubesphere-system
+
+      restartPolicy: Never
+  backoffLimit: 0

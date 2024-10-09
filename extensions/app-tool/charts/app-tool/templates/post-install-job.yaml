@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: post-install-job
+  namespace: extension-app-tool
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    spec:
+      containers:
+        - name: post-install-job
+          image: kubesphere/kubectl:v1.27.4
+          command:
+            - /bin/sh
+            - -c
+            - |
+              kubectl delete serviceaccounts.kubesphere.io app-tool -n extension-app-tool
+              kubectl delete globalrolebindings.iam.kubesphere.io app-tool-platform-admin
+              kubectl delete clusterroles.rbac.authorization.k8s.io app-tool-k8s-cluster-role
+              kubectl delete clusterrolebindings.rbac.authorization.k8s.io app-tool-k8s
+              kubectl delete serviceaccounts app-tool-k8s -n extension-app-tool
+      restartPolicy: Never
+  backoffLimit: 0

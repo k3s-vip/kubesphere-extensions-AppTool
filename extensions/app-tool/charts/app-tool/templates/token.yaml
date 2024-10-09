@@ -1,0 +1,22 @@
+apiVersion: kubesphere.io/v1alpha1
+kind: ServiceAccount
+metadata:
+  name: app-tool
+  namespace: extension-app-tool
+---
+apiVersion: iam.kubesphere.io/v1beta1
+kind: GlobalRoleBinding
+metadata:
+  labels:
+    iam.kubesphere.io/role-ref: platform-admin
+  name: app-tool-platform-admin
+roleRef:
+  apiGroup: iam.kubesphere.io
+  kind: GlobalRole
+  name: platform-admin
+subjects:
+  - apiGroup: kubesphere.io
+    kind: ServiceAccount
+    name: app-tool
+    namespace: extension-app-tool
+

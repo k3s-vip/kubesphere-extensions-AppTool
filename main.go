@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/phuslu/log"
@@ -18,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/yaml"
 )
 
@@ -73,6 +72,15 @@ func main() {
 		Use:   "app-tool",
 		Short: "A CLI tool to manage applications",
 		Run: func(cmd *cobra.Command, args []string) {
+			if token == "" {
+				log.Info().Msg("Using token from /var/run/secrets/kubesphere.io/serviceaccount/token")
+				dst := "/var/run/secrets/kubesphere.io/serviceaccount/token"
+				data, err := os.ReadFile(dst)
+				if err != nil {
+					log.Fatal().Msgf("Failed to read token file: %v", err)
+				}
+				token = string(data)
+			}
 			run()
 		},
 	}
@@ -83,7 +91,6 @@ func main() {
 
 	rootCmd.MarkFlagRequired("server")
 	rootCmd.MarkFlagRequired("repo")
-	rootCmd.MarkFlagRequired("token")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -135,25 +142,13 @@ func run() {
 	log.Info().Msgf("[4/4] updateAppLabel categoryName completed successfully")
 }
 
-func initDynamicClient() error {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Error().Msgf("Failed to get home directory: %v", err)
-		return err
-	}
-	kubeconfig := filepath.Join(homeDir, ".kube", "config")
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		log.Error().Msgf("Failed to build config: %v", err)
-		return err
-	}
-
-	dynamicClient, err = dynamic.NewForConfig(config)
+func initDynamicClient() (err error) {
+	conf := config.GetConfigOrDie()
+	dynamicClient, err = dynamic.NewForConfig(conf)
 	if err != nil {
 		log.Error().Msgf("Failed to create dynamic client: %v", err)
 		return err
 	}
-
 	log.Info().Msgf("Dynamic client initialized successfully")
 	return nil
 }

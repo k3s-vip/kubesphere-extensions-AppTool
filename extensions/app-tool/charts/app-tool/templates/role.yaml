@@ -1,0 +1,41 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: app-tool-k8s-cluster-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - '*'
+  - apiGroups:
+      - "application.kubesphere.io"
+    resources:
+      - "*"
+    verbs:
+      - "*"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-tool-k8s
+  namespace: extension-app-tool
+subjects:
+  - kind: ServiceAccount
+    name: app-tool-k8s
+    namespace: extension-app-tool
+roleRef:
+  kind: ClusterRole
+  name: app-tool-k8s-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-tool-k8s
+  namespace: extension-app-tool
