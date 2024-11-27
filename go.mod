@@ -1,12 +1,12 @@
-module app-tool
+module AppTool
 
 go 1.23.1
 
 require (
 	github.com/phuslu/log v1.0.112
 	github.com/spf13/cobra v1.8.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
+	k8s.io/apimachinery v0.31.3
+	k8s.io/client-go v0.31.3
 	sigs.k8s.io/controller-runtime v0.19.0
 	sigs.k8s.io/yaml v1.4.0
 )
