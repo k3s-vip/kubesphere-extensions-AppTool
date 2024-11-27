@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/phuslu/log"
@@ -53,6 +55,10 @@ var (
 	serverURL     string
 	token         string
 	repoURL       string
+	latestZ       bool
+	latestMax     int
+	username      string
+	password      string
 )
 
 func init() {
@@ -69,28 +75,20 @@ func init() {
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "app-tool",
+		Use:   "AppTool for KubeSphere",
 		Short: "A CLI tool to manage applications",
 		Run: func(cmd *cobra.Command, args []string) {
-			if token == "" {
-				log.Info().Msg("Using token from /var/run/secrets/kubesphere.io/serviceaccount/token")
-				dst := "/var/run/secrets/kubesphere.io/serviceaccount/token"
-				data, err := os.ReadFile(dst)
-				if err != nil {
-					log.Fatal().Msgf("Failed to read token file: %v", err)
-				}
-				token = string(data)
-			}
 			run()
 		},
 	}
 
-	rootCmd.Flags().StringVar(&serverURL, "server", "", "Kubesphere Server URL (required)")
-	rootCmd.Flags().StringVar(&repoURL, "repo", "", "Helm index URL (required)")
-	rootCmd.Flags().StringVar(&token, "token", "", "token (required)")
-
-	rootCmd.MarkFlagRequired("server")
-	rootCmd.MarkFlagRequired("repo")
+	rootCmd.Flags().StringVarP(&serverURL, "server", "s", "http://10.0.1.127:30880", "Kubesphere Server URL")
+	rootCmd.Flags().StringVarP(&repoURL, "repo", "r", "https://charts.longhorn.io", "Helm index URL")
+	rootCmd.Flags().StringVarP(&token, "token", "t", "", "token")
+	rootCmd.Flags().BoolVarP(&latestZ, "LatestZ", "Z", true, "ChartVerison LatestZ")
+	rootCmd.Flags().IntVarP(&latestMax, "latestMax", "M", 3, "ChartVerison max LatestXY")
+	rootCmd.Flags().StringVarP(&username, "username", "u", "admin", "Username")
+	rootCmd.Flags().StringVarP(&password, "password", "p", "P@88w0rd", "Password")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -163,8 +161,35 @@ func uploadChart() error {
 
 	for _, entries := range indexData.Entries {
 		var appID string
+		appLastXY, appLatestZ, appLatest, appLatestMax := "", 0, 0, latestMax
+		appVerSkip := make(map[string]int)
 		for idx, entry := range entries {
+			appVer := entry.Version
+			appVersion := strings.Split(appVer, ".")
+			appVerZ, _ := strconv.Atoi(appVersion[len(appVersion)-1])
+			if !strings.Contains(appVer, appLastXY) {
+				appLatestZ = 0
+			}
+			if appVerZ > appLatestZ {
+				appLatestZ = appVerZ
+			} else {
+				appVerSkip[entry.Version] = idx
+			}
+			appLastXY = strings.Join(appVersion[:len(appVersion)-1], ".")
+		}
+		for idx, entry := range entries {
+			if _, ok := appVerSkip[entry.Version]; ok && latestZ {
+				log.Debug().Msgf("Skip%-3d:%s", idx, entry.Version)
+				continue
+			}
+			appLatest++
+			if appLatest > appLatestMax {
+				break
+			}
 			chartURL := entry.URLs[0]
+			if strings.Contains(chartURL, "https://github.com/") {
+				chartURL = strings.Replace(chartURL, "github.com", "ghfast.top/github.com", -1)
+			}
 			chartData, err := fetchChart(chartURL)
 			if err != nil {
 				log.Error().Msgf("Failed to fetch chart %s: %v", entry.Name, err)
@@ -200,7 +225,7 @@ func uploadChart() error {
 					continue
 				}
 			}
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 
@@ -255,7 +280,20 @@ func upload(appRequest AppRequest, name, version, url string) (appID string, err
 		return "", err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	if username != "" && password != "" {
+		req.SetBasicAuth(username, password)
+	} else {
+		if token == "" {
+			dst := "/run/secrets/kubernetes.io/serviceaccount/token"
+			data, err := os.ReadFile(dst)
+			log.Warn().Msgf("try read %s", dst)
+			if err != nil {
+				log.Error().Msgf("%v", err)
+			}
+			token = string(data)
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	resp, err := client.Do(req)

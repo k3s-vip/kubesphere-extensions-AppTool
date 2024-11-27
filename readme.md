@@ -7,6 +7,9 @@
 https://ask.kubesphere.io/forum/d/23922-kubesphere-411-ying-yong-shang-dian-pei-zhi-fang-fa
 
 这个工具是把repo中的应用变成全局商店应用, 不是必须的操作。
+```shell
+GODEBUG=gotypesalias=0 CGO_ENABLED=0 go build -trimpath -ldflags "-extldflags -static -w -s"
+```
 
 ## 前提条件
 
@@ -17,9 +20,9 @@ https://ask.kubesphere.io/forum/d/23922-kubesphere-411-ying-yong-shang-dian-pei-
 
 ### 命令行参数
 
-- `--server`：kubespehre的服务器 URL（必填）
-- `--token`：平台的访问令牌（必填）
-- `--repo`：Helm repo的 URL（必填）
+- `--server`：kubespehre的服务器 URL
+- `--token`：平台的访问令牌
+- `--repo`：Helm repo的 URL
 
 ### 使用示例
 ```bash
