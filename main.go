@@ -281,7 +281,7 @@ func upload(appRequest AppRequest, name, version, url string) (appID string, err
 	}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Error().Msgf("Failed to unmarshal response body: %v", err)
+		log.Error().Msgf("Failed to unmarshal response body:%s,  %v", string(body), err)
 		return "", err
 	}
 
